@@ -6,7 +6,11 @@ using UnityEngine.InputSystem;
 public class BallHandler : MonoBehaviour
 {
     [SerializeField] private Rigidbody2D currentBallRigidBody;
+    [SerializeField] private SpringJoint2D currentBallSpringJoint;
+    [SerializeField] private float detachBallDelay;
+
     private Camera mainCamera;
+    private bool isDragging;
 
     // Start is called before the first frame update
     void Start()
@@ -17,16 +21,37 @@ public class BallHandler : MonoBehaviour
     // Update is called once per frame
     void Update()
     {
-        if (!Touchscreen.current.primaryTouch.press.isPressed) 
-        {
-            currentBallRigidBody.isKinematic = false;
+        if (currentBallRigidBody == null) {
             return;
         }
-        Vector2 touchPosition = Touchscreen.current.primaryTouch.position.ReadValue();
 
+        if (!Touchscreen.current.primaryTouch.press.isPressed) 
+        {
+            if (isDragging) {
+                LaunchBall();
+            }
+            isDragging = false;
+            return;
+        }
+
+        Vector2 touchPosition = Touchscreen.current.primaryTouch.position.ReadValue();
         Vector3 worldPosition = mainCamera.ScreenToWorldPoint(touchPosition);
 
         currentBallRigidBody.position = worldPosition;
+
+        isDragging = true;
         currentBallRigidBody.isKinematic = true;
+    }
+
+    private void LaunchBall() {
+        currentBallRigidBody.isKinematic = false;
+        currentBallRigidBody = null;
+
+        Invoke(nameof(DetachBall), detachBallDelay);
+    }
+
+    private void DetachBall() {
+        currentBallSpringJoint.enabled = false;
+        currentBallSpringJoint = null;
     }
 }
